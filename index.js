@@ -104,10 +104,7 @@ function exitHandler(options, exitCode) {
         console.log('Cleaning subscription');
         const subscription = pubsub.subscription(subscriptionName);
         if (subscription) {
-            deleteSubscriptionBeforeExit(subscription); // Is async, so need to wait for completion
-            // workerize(function () {
-            // });            
-            
+            deleteSubscriptionBeforeExit(subscription); // Is async, so need to wait for completion            
             const start = new Date().getTime();
             while(waitBeforeExit && new Date().getTime() < (start + 2000))
                msleep(10); // Busy wait until the subscription is deleted - can't async await since the exitHandler can't be async
