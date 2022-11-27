@@ -141,9 +141,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get('/', async (req, res) => {
-    // deleteSubscriptionBeforeExit(pubsub.subscription(subscriptionName)); // Is async, so need to wait for completion
-    const subscription = await subscr();
-    const json = await subscribeForResponse(subscription);
+    const json = await subscribeForResponse(await subscr());
     res
         .status(200)
         .send(JSON.stringify(json))
