@@ -141,8 +141,7 @@ app.use(bodyParser.json());
 app.get('/', async (req, res) => {
     // deleteSubscriptionBeforeExit(pubsub.subscription(subscriptionName)); // Is async, so need to wait for completion
     const subscription = await subscr();
-    // const data = 
-    await subscribeForResponse(subscription);
+    const data = await subscribeForResponse(subscription);
     res
         .status(200)
         .send('Hello, world!')
