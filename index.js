@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { nanoid, customAlphabet} = require('nanoid'); //https://github.com/ai/nanoid#comparison-with-uuid
-const workerize = require('node-inline-worker');
+// const workerize = require('node-inline-worker');
 
 const { PubSub } = require("@google-cloud/pubsub");
 
@@ -15,11 +15,12 @@ const topicName = process.env.backendTopic || 'bff-response';
 const subscriptionNameBase = process.env.responseSubBase || 'response';
 const subscriptionName = subscriptionNameBase + '-' + (process.env.myPodId || nanoid(10)); // Use pod metadata injection https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
 console.log(`Topic ${topicName}, Subscription ${subscriptionName}`);
-async function subscr() {
+async function subscr(subscriptionName) {
     let subscription = pubsub.subscription(subscriptionName);
 
     const [subscrExists] = await subscription.exists();
     if (!subscription || !subscrExists) {
+        console.log(`Creating unique FANOUT subscription ${subscriptionName}`)
         const [subs] = await pubsub.topic(topicName).createSubscription(subscriptionName);
         subscription = subs;
     }
@@ -78,6 +79,7 @@ async function subscribeForResponse(subscription, fn = null) {
     });
 }
 
+/*
 // Cleanup on exit - delete subscription
 process.stdin.resume(); // so the program will not close instantly
 
@@ -126,6 +128,7 @@ process.on('SIGUSR2', exitHandler.bind(null, {exit:true}));
 
 //catches uncaught exceptions
 process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
+*/
 
 let records = [];
 
@@ -138,7 +141,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get('/', async (req, res) => {
-    const json = await subscribeForResponse(await subscr());
+    const json = await subscribeForResponse(await subscr(subscriptionName));
     res
         .status(200)
         .send(JSON.stringify(json))
@@ -150,6 +153,7 @@ app.get('/', async (req, res) => {
     // });            
 });
  
+/*
 app.post('/record', (req, res) => {
     const record = req.body;
 
@@ -163,6 +167,7 @@ app.post('/record', (req, res) => {
 app.get('/records', (req, res) => {
     res.json(records);
 });
+*/
 
 // Start the server
 const PORT = process.env.PORT || 8080;
