@@ -1,0 +1,7 @@
+Summary
+Messaging is the concept of sending and receiving data as events across processes, which can include sending messages to any number of parties (one-to-one, one-to-many, or many-to-many).
+Cloud Pub/Sub is a fully managed, highly available messaging system that handles message routing across lots of senders and receivers.
+Producers can send messages to topics, which consumers can then subscribe to by creating subscriptions.
+Messages can either be pulled by the receiver (“Any messages for me?”) or pushed by the sender (“There’s a message for you!”).
+Producers most commonly use Cloud Pub/Sub for fan-out (broadcast) or work-queue (orchestration) messaging.
+Cloud Pub/Sub charges based on the amount of data you send through the system, meaning larger messages cost more than smaller messages, with a minimum of 1 KB per message.

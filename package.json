@@ -1,0 +1,24 @@
+{
+  "name": "rest2pubsub",
+  "version": "1.0.0",
+  "description": "library for accepting rest calls, relay on a Google pub/sub topic, block http response sending until it arrives via a response topic",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Sergey Zolotnitsky",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@google-cloud/pubsub": "^3.2.1",
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "nanoid": "^3.3.4",
+    "node-inline-worker": "^1.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
