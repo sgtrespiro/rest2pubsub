@@ -19,7 +19,7 @@ async function subscr(subscriptionName) {
     let subscription = pubsub.subscription(subscriptionName);
 
     const [subscrExists] = await subscription.exists();
-    if (!subscription || !subscrExists) {
+    if (!subscrExists) {
         console.log(`Creating unique FANOUT subscription ${subscriptionName}`)
         const [subs] = await pubsub.topic(topicName).createSubscription(subscriptionName);
         subscription = subs;
@@ -79,18 +79,16 @@ async function subscribeForResponse(subscription, fn = null) {
     });
 }
 
-/*
 // Cleanup on exit - delete subscription
 process.stdin.resume(); // so the program will not close instantly
 
 let waitBeforeExit = true;
-function deleteSubscriptionBeforeExit(subscription) {
+async function deleteSubscriptionBeforeExit(subscription) {
     console.log(`Deleting subscription ${subscriptionName}`);
-    subscription.delete().then(() => {
-        // Deletes the subscription
-        console.log(`Subscription ${subscriptionName} deleted.`);
-        waitBeforeExit = false;
-    }).catch(console.log);
+    await subscription.delete();
+    // Deletes the subscription
+    console.log(`Subscription ${subscriptionName} deleted.`);
+    waitBeforeExit = false;
 }
 
 function msleep(n) {
@@ -100,17 +98,20 @@ function sleep(n) {
     msleep(n*1000);
 }
 
-function exitHandler(options, exitCode) {
+async function exitHandler(options, exitCode) {
     console.warn(`Handling exit: options = ${JSON.stringify(options)}, exitCode = ${exitCode}`);
     if (options.cleanup) {
-        console.log('Cleaning subscription');
         const subscription = pubsub.subscription(subscriptionName);
-        if (subscription) {
-            deleteSubscriptionBeforeExit(subscription); // Is async, so need to wait for completion            
-            const start = new Date().getTime();
-            while(waitBeforeExit && new Date().getTime() < (start + 2000))
-               msleep(10); // Busy wait until the subscription is deleted - can't async await since the exitHandler can't be async
-        }
+        try {
+            const [subscrExists] = await subscription.exists();
+            if (subscrExists) {
+                console.log('Cleaning subscription ' + subscriptionName);
+                await deleteSubscriptionBeforeExit(subscription); // Is async, so need to wait for completion            
+                const start = new Date().getTime();
+                while(waitBeforeExit && new Date().getTime() < (start + 2000))
+                msleep(10); // Busy wait until the subscription is deleted - can't async await since the exitHandler can't be async
+            }
+        } catch(x) {console.error(x)}
     }
     if (exitCode || exitCode === 0) console.log(`Exiting with code ${exitCode}`);
     if (options.exit) process.exit(1);
@@ -128,7 +129,6 @@ process.on('SIGUSR2', exitHandler.bind(null, {exit:true}));
 
 //catches uncaught exceptions
 process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
-*/
 
 let records = [];
 
