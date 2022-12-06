@@ -32,28 +32,39 @@ async function subscr(subscriptionName) {
 
 async function subscribeForResponse(subscription, fn = null) {
     return new Promise((resolve, reject) => {
+        let onMessage = null;
+        let onError = null;
+        let onDebug = null;
+        let onClose = null;
+
+        const unsubscribe = function () {
+            if(onMessage) subscription.removeListener('message', onMessage);
+            if(onError) subscription.removeListener('message', onError);
+            if(onDebug) subscription.removeListener('message', onDebug);
+            if(onClose) subscription.removeListener('message', onClose);
+        }
             // Register an error handler.
-        subscription.on('error', (err) => { 
-            console.error(err); 
-            if(fn) fn(null, err);
+        onError = (err) => {
+            console.error(err);
+            if (fn) fn(null, err);
             reject(err);
-            // Remove the listener from receiving `message` events.
-            subscription.removeListener('message', onMessage);
-        });
+
+            unsubscribe();
+        };
 
         // Register a debug handler, to catch non-fatal errors.
-        subscription.on('debug', (err) => { 
-            console.debug(err); 
-        });
+        onDebug = (err) => {
+            console.debug(err);
+        };
 
         // Register a close handler in case the subscriber closes unexpectedly
-        subscription.on('close', () => {
-            if(fn) fn(null, null);
+        onClose = () => {
+            if (fn) fn(null, null);
             reject("Closed unexpectedly");
-        });
+        };
 
         // Register a listener for `message` events.
-        function onMessage(message) {
+        onMessage = (message) => {
             // Called every time a message is received.
 
             // message.id = ID of the message.
@@ -69,12 +80,17 @@ async function subscribeForResponse(subscription, fn = null) {
             // if your limit was hit or if you don't want to ack the message.
             // message.nack();
             const json = JSON.parse(message.data.toString());
-            if(fn) fn(json, null);
-            resolve(json);       
+            if (fn) fn(json, null);
+            resolve(json);
             // Remove the listener from receiving `message` events.
             message.ack();
-            subscription.removeListener('message', onMessage);
+
+            unsubscribe();
         }
+
+        subscription.on('error', onError);
+        subscription.on('debug', onDebug);
+        subscription.on('close', onClose);
         subscription.on('message', onMessage);
     });
 }
@@ -100,18 +116,23 @@ function sleep(n) {
 
 async function exitHandler(options, exitCode) {
     console.warn(`Handling exit: options = ${JSON.stringify(options)}, exitCode = ${exitCode}`);
+    console.trace();
     if (options.cleanup) {
         const subscription = pubsub.subscription(subscriptionName);
         try {
-            const [subscrExists] = await subscription.exists();
+            console.log(`${false?"Existing":"Ghost"} subscription ` + subscriptionName);
+            const resExists = await subscription.exists();
+            console.log(`${true?"Existing":"Ghost"} subscription ` + subscriptionName);
+            const [subscrExists] = resExists;
+            console.log(`${subscrExists?"Existing":"Ghost"} subscription ` + subscriptionName);
             if (subscrExists) {
                 console.log('Cleaning subscription ' + subscriptionName);
                 await deleteSubscriptionBeforeExit(subscription); // Is async, so need to wait for completion            
                 const start = new Date().getTime();
                 while(waitBeforeExit && new Date().getTime() < (start + 2000))
-                msleep(10); // Busy wait until the subscription is deleted - can't async await since the exitHandler can't be async
+                    msleep(10); // Busy wait until the subscription is deleted - can't async await since the exitHandler can't be async
             }
-        } catch(x) {console.error(x)}
+        } catch(x) {console.log(x)}
     }
     if (exitCode || exitCode === 0) console.log(`Exiting with code ${exitCode}`);
     if (options.exit) process.exit(1);
