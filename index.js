@@ -11,17 +11,17 @@ const pubsub = new PubSub ({
    keyFilename: 'keys/respiro-playground-2f507787150f.json'
 });
 
-const topicName = process.env.backendTopic || 'bff-response';
+const topicNameResponse = process.env.backendTopic || 'bff-response';
 const subscriptionNameBase = process.env.responseSubBase || 'response';
 const subscriptionName = subscriptionNameBase + '-' + (process.env.myPodId || nanoid(10)); // Use pod metadata injection https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
-console.log(`Topic ${topicName}, Subscription ${subscriptionName}`);
+console.log(`Topic ${topicNameResponse}, Subscription ${subscriptionName}`);
 async function subscr(subscriptionName) {
     let subscription = pubsub.subscription(subscriptionName);
 
     const [subscrExists] = await subscription.exists();
     if (!subscrExists) {
         console.log(`Creating unique FANOUT subscription ${subscriptionName}`)
-        const [subs] = await pubsub.topic(topicName).createSubscription(subscriptionName);
+        const [subs] = await pubsub.topic(topicNameResponse).createSubscription(subscriptionName);
         subscription = subs;
     }
     if(!subscription.isOpen) {
@@ -161,6 +161,40 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+// The name of the topic to which you want to publish messages
+const topicNameRequest = 'MY_PUBSUB_TOPIC';
+
+// Accept all incoming HTTP requests
+app.all('*', async (req, res) => {
+  // Create an object that contains the request body, headers, and URL
+  const requestData = {
+    body: req.rawBody,
+    headers: req.headers,
+    url: req.url,
+  };
+
+  // Get a reference to the PubSub topic
+  const topicRequest = pubsub.topic(topicNameRequest);
+
+  // Publish the request data to the PubSub topic
+  topicRequest
+    .publishMessage(requestData)
+    .then(async () => {
+      console.log('Successfully published request to PubSub topic');
+      // Wait for response
+      const json = await subscribeForResponse(await subscr(subscriptionName));
+      res
+          .status(200)
+          .send(JSON.stringify(json))
+          .end();
+    })
+    .catch(err => {
+      // Send an error response to the client
+      res.status(500).send(`Error publishing to PubSub topic: ${err.message}`);
+    });
+});
+
+
 app.get('/', async (req, res) => {
     const json = await subscribeForResponse(await subscr(subscriptionName));
     res
@@ -196,3 +230,5 @@ app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
   console.log('Press Ctrl+C to quit.');
 });
+
+
