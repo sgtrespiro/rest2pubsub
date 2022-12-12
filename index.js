@@ -195,18 +195,18 @@ app.all('*', async (req, res) => {
 });
 
 
-app.get('/', async (req, res) => {
-    const json = await subscribeForResponse(await subscr(subscriptionName));
-    res
-        .status(200)
-        .send(JSON.stringify(json))
-        .end();
+// app.get('/', async (req, res) => {
+//     const json = await subscribeForResponse(await subscr(subscriptionName));
+//     res
+//         .status(200)
+//         .send(JSON.stringify(json))
+//         .end();
 
-    // workerize(function () {
-    //     for(let i = 0; i < 10000; i++)
-    //         console.log(`worked a bit ${i}`);
-    // });            
-});
+//     // workerize(function () {
+//     //     for(let i = 0; i < 10000; i++)
+//     //         console.log(`worked a bit ${i}`);
+//     // });            
+// });
  
 /*
 app.post('/record', (req, res) => {
