@@ -11,7 +11,8 @@ const pubsub = new PubSub ({
    keyFilename: 'keys/respiro-playground-2f507787150f.json'
 });
 
-const topicNameResponse = process.env.backendTopic || 'bff-response';
+const topicNameRequest = process.env.backendRequestTopic || 'backend-request';
+const topicNameResponse = process.env.backendResponseTopic || 'bff-response';
 const subscriptionNameBase = process.env.responseSubBase || 'response';
 const subscriptionName = subscriptionNameBase + '-' + (process.env.myPodId || nanoid(10)); // Use pod metadata injection https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
 console.log(`Topic ${topicNameResponse}, Subscription ${subscriptionName}`);
@@ -161,9 +162,6 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// The name of the topic to which you want to publish messages
-const topicNameRequest = 'MY_PUBSUB_TOPIC';
-
 // Accept all incoming HTTP requests
 app.all('*', async (req, res) => {
   // Create an object that contains the request body, headers, and URL
@@ -171,6 +169,7 @@ app.all('*', async (req, res) => {
     body: req.rawBody,
     headers: req.headers,
     url: req.url,
+    reqId: nanoid(10),
   };
 
   // Get a reference to the PubSub topic
